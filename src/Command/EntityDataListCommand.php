@@ -2,7 +2,7 @@
 
 namespace Danilovl\EntityDataListConsoleBundle\Command;
 
-use Danilovl\EntityDataListConsoleBundle\DependencyInjection\LogicException;
+use Danilovl\EntityDataListConsoleBundle\Exception\LogicException;
 use DateTimeInterface;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Persistence\Mapping\ClassMetadata;
