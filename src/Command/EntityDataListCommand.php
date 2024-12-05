@@ -118,7 +118,7 @@ abstract class EntityDataListCommand extends Command
 
     protected function getAssociationsIgnore(): int
     {
-        return 0;
+        return 1;
     }
 
     protected function getAssociationsLimit(): int
@@ -136,7 +136,10 @@ abstract class EntityDataListCommand extends Command
      */
     protected function getFields(ClassMetadata $metadata): array
     {
-        return $metadata->getFieldNames();
+        $fieldNames = $metadata->getFieldNames();
+        $associationNames = $metadata->getAssociationNames();
+
+        return array_merge($fieldNames, $associationNames);
     }
 
     protected function processRow(
