@@ -36,7 +36,7 @@ return [
 
 ### 2. Command overview
 
-The abstract class `EntityDataListCommand` provides a base for creating commands that retrieve and display data for doctrine entities. 
+The abstract class `EntityDataListCommand` provides a base for creating commands that retrieve and display data for doctrine entities.
 
 The `OrmEntityDataListCommand` is a concrete implementation registered as a Symfony console command under the name:
 
@@ -47,25 +47,25 @@ The `OrmEntityDataListCommand` is a concrete implementation registered as a Symf
 ### 3. Features
 
 - Universal data rendering:<br/>
-Works with any doctrine entity by providing its class name.<br/>
-Retrieves data directly from the database.
+  Works with any doctrine entity by providing its class name.<br/>
+  Retrieves data directly from the database.
 
 
 - Field customization:<br/>
-Allows you to configure which fields of the entity to display in the output.<br/>
-Supports customization of related entity fields (e.g., OneToMany, ManyToOne).
+  Allows you to configure which fields of the entity to display in the output.<br/>
+  Supports customization of related entity fields (e.g., OneToMany, ManyToOne).
 
 
 - Pagination support:<br/>
-Includes --limit and --offset options to control the number of records retrieved and the starting point.
+  Includes --limit and --offset options to control the number of records retrieved and the starting point.
 
 
 - Formatted output:<br/>
-Displays data in a structured table format for easy reading.
+  Displays data in a structured table format for easy reading.
 
 
 - Date handling:<br/>
-Automatically formats datetime and date fields into human-readable strings.
+  Automatically formats datetime and date fields into human-readable strings.
 
 
 ### 4. Usage
@@ -92,7 +92,7 @@ Skips the specified number of rows before starting the result set. Default: 0.
 
 --associations-ignore (optional):
 
-Specifies associations (e.g., OneToMany, ManyToOne) to ignore during rendering.<br/> 
+Specifies associations (e.g., OneToMany, ManyToOne) to ignore during rendering.<br/>
 Provide a comma-separated list of association field names.<br/>
 Default: value returned by getAssociationsIgnore().
 
@@ -169,6 +169,53 @@ Run your custom command:
 
 ```bash 
  php bin/console app:user-data-list
+```
+
+### 5. Gedmo
+
+If your project utilizes the `Gedmo\Translatable` extension to manage translations for entities, you can leverage the `OrmTranslatableEntityDataListCommand` class to handle translatable entities in console commands.
+
+This command ensures that the correct translation locale is set before querying data, allowing you to easily render localized data from the database.
+
+#### 5.1 Important note
+
+The default locale is set to en (English).<br/>
+If your project uses a different default locale (e.g., en, fr), you need to override the `getLocale()` method in your custom command to set the appropriate default.
+
+```php
+protected function getLocale(): string
+{
+    return 'en_US'; // Gedmo default locale is en_US
+}
+````
+
+#### 5.2 How to use
+
+Create your custom command class and extend `OrmTranslatableEntityDataListCommand`.
+
+```php
+<?php declare(strict_types=1);
+
+namespace App\Command;
+
+use App\Domain\Product\Entity\Product;
+use Danilovl\EntityDataListConsoleBundle\Command\OrmTranslatableEntityDataListCommand;
+use Symfony\Component\Console\Attribute\AsCommand;
+
+#[AsCommand('danilovl:entity-data-list:product', 'Render the database data of a product entity.')]
+class ProductListCommand extends OrmTranslatableEntityDataListCommand
+{
+    protected function getEntityClass(): ?string
+    {
+        return Product::class;
+    }
+}
+```
+
+Run your custom command:
+
+```bash 
+ php bin/console danilovl:entity-data-list:product --locale=ru
 ```
 
 ## License
