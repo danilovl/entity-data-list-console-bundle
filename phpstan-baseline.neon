@@ -1,0 +1,13 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#1 \$className of method Doctrine\\ORM\\EntityManagerInterface\:\:getRepository\(\) expects class\-string\<object\>, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Command/OrmEntityDataListCommand.php
+
+		-
+			message: '#^Unable to resolve the template type T in call to method Doctrine\\ORM\\EntityManagerInterface\:\:getRepository\(\)$#'
+			identifier: argument.templateType
+			count: 1
+			path: src/Command/OrmEntityDataListCommand.php
