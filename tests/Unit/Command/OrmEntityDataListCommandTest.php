@@ -113,7 +113,7 @@ class OrmEntityDataListCommandTest extends TestCase
         $this->assertEquals(Command::FAILURE, $exitCode);
         $this->assertSame(
             '[ERROR] Entity class "App\Entity\InvalidClass" does not exist.',
-            preg_replace('~\s+~', ' ', trim($output))
+            preg_replace('~\s+~', ' ', mb_trim($output))
         );
     }
 
@@ -134,7 +134,7 @@ class OrmEntityDataListCommandTest extends TestCase
         $this->assertEquals(Command::FAILURE, $exitCode);
         $this->assertSame(
             '[ERROR] Entity class "Danilovl\EntityDataListConsoleBundle\Tests\Mock\UserMock" is not a Doctrine entity.',
-            preg_replace('~\s+~', ' ', trim($output))
+            preg_replace('~\s+~', ' ', mb_trim($output))
         );
     }
 
