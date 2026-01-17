@@ -141,7 +141,7 @@ class OrmEntityDataListCommandTest extends TestCase
     private function createCommandTester(OrmEntityDataListCommand $ormEntityDataListCommand): CommandTester
     {
         $application = new Application;
-        $application->add($ormEntityDataListCommand);
+        $application->addCommand($ormEntityDataListCommand);
 
         /** @var string $commandName */
         $commandName = $ormEntityDataListCommand->getName();
