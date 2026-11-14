@@ -2,7 +2,7 @@
 
 namespace Danilovl\EntityDataListConsoleBundle\Command;
 
-use use Danilovl\EntityDataListConsoleBundle\Exception\LogicException;
+use Danilovl\EntityDataListConsoleBundle\Exception\LogicException;
 use BackedEnum;
 use DateTimeInterface;
 use Doctrine\Common\Collections\Collection;
