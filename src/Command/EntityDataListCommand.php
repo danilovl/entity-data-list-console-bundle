@@ -3,10 +3,12 @@
 namespace Danilovl\EntityDataListConsoleBundle\Command;
 
 use Danilovl\EntityDataListConsoleBundle\Exception\LogicException;
+use BackedEnum;
 use DateTimeInterface;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Persistence\Mapping\ClassMetadata;
 use Stringable;
+use UnitEnum;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\{
     InputOption,
@@ -23,13 +25,22 @@ abstract class EntityDataListCommand extends Command
 
     protected const string NOT_AVAILABLE = 'N/A';
 
+    /**
+     * @param class-string $className
+     */
     abstract protected function getResult(string $className, int $limit, int $offset): array;
 
+    /**
+     * @param class-string $className
+     */
     abstract protected function getClassMetadata(string $className): ClassMetadata;
 
+    /**
+     * @param class-string $className
+     */
     abstract protected function isDoctrineEntity(string $className): bool;
 
-    private SymfonyStyle $io;
+    protected SymfonyStyle $io;
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
@@ -41,10 +52,10 @@ abstract class EntityDataListCommand extends Command
         $this->configureEntityArgument();
 
         $this
-            ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of results', $this->getLimit())
-            ->addOption('offset', null, InputOption::VALUE_OPTIONAL, 'Offset for the results', $this->getOffset())
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results', $this->getLimit())
+            ->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Offset for the results', $this->getOffset())
             ->addOption('associations-ignore', null, InputOption::VALUE_OPTIONAL, 'Associations ignore', $this->getAssociationsIgnore())
-            ->addOption('associations-limit', null, InputOption::VALUE_OPTIONAL, 'Associations render limit', $this->getAssociationsLimit());
+            ->addOption('associations-limit', null, InputOption::VALUE_REQUIRED, 'Associations render limit', $this->getAssociationsLimit());
     }
 
     protected function configureEntityArgument(): void
@@ -60,22 +71,19 @@ abstract class EntityDataListCommand extends Command
     {
         /** @var string $className */
         $className = $this->getEntityClass() ?? $input->getArgument('entity');
+        $className = mb_ltrim($className, '\\');
 
-        /** @var string $limit */
-        $limit = $input->getOption('limit');
-        $limit = (int) $limit;
+        $limit = $this->getIntOption($input, 'limit', 1);
+        $offset = $this->getIntOption($input, 'offset', 0);
+        $associationsLimit = $this->getIntOption($input, 'associations-limit', 0);
 
-        /** @var string $offset */
-        $offset = $input->getOption('offset');
-        $offset = (int) $offset;
+        if ($limit === null || $offset === null || $associationsLimit === null) {
+            return Command::FAILURE;
+        }
 
         /** @var int $associationsIgnore */
         $associationsIgnore = $input->getOption('associations-ignore');
         $associationsIgnore = (bool) $associationsIgnore;
-
-        /** @var string $associationsLimit */
-        $associationsLimit = $input->getOption('associations-limit');
-        $associationsLimit = (int) $associationsLimit;
 
         if (!class_exists($className)) {
             $this->io->error(sprintf('Entity class "%s" does not exist.', $className));
@@ -104,6 +112,28 @@ abstract class EntityDataListCommand extends Command
         $table->render();
 
         return Command::SUCCESS;
+    }
+
+    private function getIntOption(InputInterface $input, string $name, int $min): ?int
+    {
+        /** @var int|string $value */
+        $value = $input->getOption($name);
+        $result = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => $min]]);
+
+        if ($result === false) {
+            $message = sprintf(
+                'Option "--%s" must be an integer greater than or equal to %d, "%s" given.',
+                $name,
+                $min,
+                $value
+            );
+
+            $this->io->error($message);
+
+            return null;
+        }
+
+        return $result;
     }
 
     protected function getLimit(): int
@@ -158,13 +188,7 @@ abstract class EntityDataListCommand extends Command
         foreach ($fields as $field) {
             if ($metadata->hasField($field)) {
                 $value = $metadata->getFieldValue($entity, $field);
-
-                if ($value instanceof DateTimeInterface) {
-                    $dateFormat = $this->getProcessRowDateFormat() ?? self::DEFAULT_DATE_FORMAT;
-                    $row[] = $value->format($dateFormat);
-                } else {
-                    $row[] = $value;
-                }
+                $row[] = $this->formatValue($value);
             } elseif (!$ignoreAssociations && $metadata->hasAssociation($field)) {
                 $related = $metadata->getFieldValue($entity, $field);
                 $row[] = $this->processAssociations($related, $associationsLimit);
@@ -200,6 +224,44 @@ abstract class EntityDataListCommand extends Command
     protected function processAssociation(object $item): string
     {
         return $item instanceof Stringable ? (string) $item : self::NOT_AVAILABLE;
+    }
+
+    protected function formatValue(mixed $value): string|int|float|bool|null
+    {
+        if ($value instanceof DateTimeInterface) {
+            $dateFormat = $this->getProcessRowDateFormat() ?? self::DEFAULT_DATE_FORMAT;
+
+            return $value->format($dateFormat);
+        }
+
+        if ($value instanceof BackedEnum) {
+            return $value->value;
+        }
+
+        if ($value instanceof UnitEnum) {
+            return $value->name;
+        }
+
+        if (is_array($value)) {
+            $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+
+            return $json === false ? self::NOT_AVAILABLE : $json;
+        }
+
+        if ($value instanceof Stringable) {
+            return (string) $value;
+        }
+
+        if (is_object($value)) {
+            return $value::class;
+        }
+
+        if (is_resource($value)) {
+            return self::NOT_AVAILABLE;
+        }
+
+        /** @var string|int|float|bool|null $value */
+        return $value;
     }
 
     protected function getProcessRowDateFormat(): ?string

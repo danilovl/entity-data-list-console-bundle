@@ -14,34 +14,50 @@ class OrmEntityDataListCommand extends EntityDataListCommand
         parent::__construct();
     }
 
+    /**
+     * @param class-string $className
+     */
     protected function isDoctrineEntity(string $className): bool
     {
-        $allMetadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
+        $metadataFactory = $this->entityManager->getMetadataFactory();
 
-        foreach ($allMetadata as $metadata) {
-            if ($metadata->getName() === $className) {
-                return true;
-            }
+        if ($metadataFactory->isTransient($className)) {
+            return false;
         }
 
-        return false;
+        $metadata = $metadataFactory->getMetadataFor($className);
+
+        return !$metadata->isMappedSuperclass && !$metadata->isEmbeddedClass;
     }
 
+    /**
+     * @param class-string $className
+     */
     protected function getClassMetadata(string $className): ClassMetadata
     {
         return $this->entityManager->getClassMetadata($className);
     }
 
+    /**
+     * @param class-string $className
+     */
     protected function getResult(string $className, int $limit, int $offset): array
     {
         $repository = $this->entityManager->getRepository($className);
+        $metadata = $this->entityManager->getClassMetadata($className);
+
+        $queryBuilder = $repository->createQueryBuilder('e')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        foreach ($metadata->getIdentifierFieldNames() as $identifier) {
+            if ($metadata->hasField($identifier)) {
+                $queryBuilder->addOrderBy('e.' . $identifier, 'ASC');
+            }
+        }
 
         /** @var array $result */
-        $result = $repository->createQueryBuilder('e')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset)
-            ->getQuery()
-            ->getResult();
+        $result = $queryBuilder->getQuery()->getResult();
 
         return $result;
     }
