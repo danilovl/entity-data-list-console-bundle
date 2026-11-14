@@ -2,7 +2,7 @@
 
 namespace Danilovl\EntityDataListConsoleBundle\Command;
 
-use Danilovl\EntityDataListConsoleBundle\Exception\LogicException;
+use use Danilovl\EntityDataListConsoleBundle\Exception\LogicException;
 use BackedEnum;
 use DateTimeInterface;
 use Doctrine\Common\Collections\Collection;
@@ -200,12 +200,9 @@ abstract class EntityDataListCommand extends Command
         return $row;
     }
 
-    /**
-     * @param object|Collection|null $related
-     */
     protected function processAssociations(mixed $related, int $associationsLimit): string
     {
-        if ($related === null) {
+        if (!is_object($related)) {
             return self::NOT_AVAILABLE;
         }
 
